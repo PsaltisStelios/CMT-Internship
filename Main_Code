@@ -1,0 +1,790 @@
+###################################################################
+import calendar
+import datetime as dt
+dfsmall['Year']=df['ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ'].dt.year
+df
+
+dfsmall['Month']=df['ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ'].dt.month
+
+dfsmall['Quarter']=df['ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ'].dt.quarter
+
+##################################################################
+
+
+
+
+import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import os#Βλεπω κια οριζω εγω το working directory
+import pickle #Για να διαβασει το αρχειο pickle απτο current working directory
+import seaborn as sns
+import matplotlib.ticker as mticker
+from matplotlib.ticker import MaxNLocator
+
+
+
+os.getcwd()
+os.chdir('C:/Users/User/Documents/Anaconda')
+os.getcwd()
+
+
+#Tot=pd.read_csv('NewWorld.csv',low_memory=False) 
+Tot=pd.read_csv('Special.csv',low_memory=False,sep=";")  #WITH 2022
+
+
+
+#Pick the 3rd and 4th QUARTER of 2021
+#Final=Tot[(Tot['Έτος'] == 2021) & ((Tot['ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ'] == 3) | (Tot['ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ'] == 4))]
+
+
+
+#Pick 2020 and 2021
+Final=Tot[((Tot['Έτος'] == 2020) | (Tot['Έτος'] == 2021))]
+Final['ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ']=pd.to_datetime(Final['ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ'])
+Final=Final.sort_values(by='ΗΜΕΡΟΜΗΝΙΑ_ΣΥΝΤΑΓΗΣ')
+
+USE=Final.loc[:,["ΚΠ_ΑΣΘΕΝΗ","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ","ΠΟΣΟΤΗΤΑ",
+"Έτος","Μήνας","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ",'ChapterCodesΕξοδ','ATC1', 'ATC2','ATC3']]
+
+
+import calendar
+import datetime
+USE["Μήνας"] = USE["Μήνας"].apply(lambda x: calendar.month_name[x])
+
+
+
+
+USE['Full Month Date'] =USE['Μήνας'].map(str) + ' ' + USE['Έτος'].map(str)
+
+USE['Full Quart Date'] ='Q'+USE['ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ'].map(str) + ' ' + USE['Έτος'].map(str)
+
+
+
+
+
+
+def million_formatter(x, pos):
+    return "%.1f T" % (x/1E4) 
+
+sns.set_style("white")
+colors = ['#4A8DDC', '#2B526A', '#9A64A0', '#4DADB5', '#E4A77F', '#6C88B7', '#605E5C',
+ '#867288', '#33AE81', '#DC5B57', '#CCCCCC', '#BB4A4A', '#168980', '#293537',
+ '#DFBFBF', '#476A75', '#016AB8', '#AAF20F', '#A6687A', '#3557B8']
+
+############################################################################################################
+
+
+
+
+
+
+
+
+
+##############################################################################################################
+##############
+#Single Lines#
+##############
+
+
+matplotlib.rc('font', size=15)
+matplotlib.rc('axes', titlesize=18)
+def chlines(Xronia,Trim,Mhnas,Axia,Index,nameY="Υ",nameX="Χ",Minimum=0,Maximum=1,bmineUP=0,bmineDOWN=0,u=(0),d=(1)):
+    LINE1=USE.loc[:,[Xronia,Trim,Mhnas,Axia]]
+    if Index==1:
+        ExpensesY=LINE1.groupby(Xronia)[Axia].sum()
+        YearList=np.unique(LINE1.loc[:,Xronia]).tolist()
+        strings = [str(x) for x in YearList]
+        x = strings
+        y = ExpensesY
+        print("Η μικρότερη τιμή της ExpensesY είναι",min(ExpensesY))
+        print("Η μεγαλύτερη τιμή της ExpensesY είναι",max(ExpensesY))
+        print()
+        print()
+        print("Ολες οι τιμες")
+        print()
+        print()
+        print(y)
+        fig, ax = plt.subplots(figsize=(12, 6),tight_layout=True)
+        ax.set_ylim([min(ExpensesY)-0.2*min(ExpensesY), max(ExpensesY)+0.2*max(ExpensesY)]) 
+        #ax.set_xlabel(Trim)
+        #ax.set_ylabel(Axia)
+        ax.set_xticklabels(x, rotation=60, ha='right')
+
+############ SHOW SOME OF THE VALUES HIGHER, BELOW THE POINTS OR NOT AT ALL ############
+        TotInt = [int(i) for i in ExpensesY.iloc] 
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(u)):   
+                    if a==x[u[i]]:
+                        plt.text(a, b+0.02*min(ExpensesY), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(d)):       
+                    if a==x[d[j]]:
+                        plt.text(a, b-0.05*min(ExpensesY), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+
+        ax.plot(x,y,color=colors[0], 
+        linestyle='dashed', linewidth = 3,marker='o', 
+        markerfacecolor=colors[0], markersize=7)
+
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+        plt.xlabel(nameX, fontsize=17,color="black")
+        plt.ylabel(nameY, fontsize=17,color="black")
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()
+        plt.show()
+    if Index==2:
+        ExpensesQ=LINE1.groupby([Xronia,Trim])[Axia].sum()
+        x = USE['Full Quart Date'].unique().tolist()
+        y = ExpensesQ
+        print("Η μικρότερη τιμή της ExpensesQ είναι",min(ExpensesQ))
+        print("Η μεγαλύτερη τιμή της ExpensesQ είναι",max(ExpensesQ))
+        print()
+        print()
+        print("Ολες οι τιμες")
+        print()
+        print()
+        print(y)
+        fig, ax = plt.subplots(figsize=(12, 6),tight_layout=True)
+        ax.set_ylim([min(ExpensesQ)-0.2*min(ExpensesQ), max(ExpensesQ)+0.2*max(ExpensesQ)]) 
+        #ax.set_xlabel(Trim)
+        #ax.set_ylabel(Axia)
+        ax.set_xticklabels(x, rotation=60, ha='right')
+
+############ SHOW SOME OF THE VALUES HIGHER, BELOW THE POINTS OR NOT AT ALL ############
+        TotInt = [int(i) for i in ExpensesQ.iloc] 
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(u)):   
+                    if a==x[u[i]]:
+                        plt.text(a, b+0.02*min(ExpensesQ), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(d)):       
+                    if a==x[d[j]]:
+                        plt.text(a, b-0.05*min(ExpensesQ), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+
+        ax.plot(x,y,color=colors[0], 
+        linestyle='dashed', linewidth = 3,marker='o', 
+        markerfacecolor=colors[0], markersize=7)
+
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+        plt.xlabel(nameX, fontsize=17,color="black")
+        plt.ylabel(nameY, fontsize=17,color="black")
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()
+        plt.show()     
+    if Index==3:
+        ExpensesM=LINE1.groupby([Xronia,Mhnas])[Axia].sum()
+        x = USE['Full Month Date'].unique().tolist()
+        y = ExpensesM
+        print("Η μικρότερη τιμή της ExpensesM είναι",min(ExpensesM))
+        print("Η μεγαλύτερη τιμή της ExpensesM είναι",max(ExpensesM))
+        print()
+        print()
+        print("Ολες οι τιμες")
+        print()
+        print()
+        print(y)
+        fig, ax = plt.subplots(figsize=(12, 6),tight_layout=True)
+        ax.set_ylim([min(ExpensesM)-0.2*min(ExpensesM), max(ExpensesM)+0.2*max(ExpensesM)]) 
+        #ax.set_xlabel(Mhnas)
+        #ax.set_ylabel(Axia)
+        ax.set_xticklabels(x, rotation=80, ha='right')
+
+############ SHOW SOME OF THE VALUES HIGHER, BELOW THE POINTS OR NOT AT ALL ############
+        TotInt = [int(i) for i in ExpensesM.iloc]
+        rd= [round(num, -5) for num in TotInt] 
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(u)):   
+                    if a==x[u[i]]:
+                        plt.text(a, b+0.02*min(ExpensesM), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(d)):       
+                    if a==x[d[j]]:
+                        plt.text(a, b-0.05*min(ExpensesM), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1        
+        
+        ax.plot(x,pd.DataFrame(y).values,color=colors[0],
+        linestyle='dashed', linewidth = 3,marker='o', 
+        markerfacecolor=colors[0], markersize=7)
+
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+        #ax.set_xlabel(Mhnas)
+        #ax.set_ylabel(Axia)
+        plt.xlabel(nameX, fontsize=17,color="black")
+        plt.ylabel(nameY, fontsize=17,color="black")
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()        
+        plt.show() 
+
+
+
+
+############################
+### ΑΝΑ ΑΞΙΑ ###
+############################
+######
+#Ετος#
+######
+chlines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ",1,nameY="Δαπάνη (€,Χιλιάδες)",nameX="Τρίμηνο",
+bmineUP=0,bmineDOWN=0,
+Minimum=20833406,Maximum= 25833406,
+u=[1],
+d=[0])
+
+########
+#3-μηνο#
+########
+chlines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ",2,nameY="Δαπάνη (€,Χιλιάδες)",nameX="Τρίμηνο",
+bmineUP=0,bmineDOWN=0,
+Minimum=0,Maximum=0,
+u=[1],
+d=[0])
+
+#######
+#Μηνας#
+#######
+chlines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ",3,nameY="Δαπάνη (€,Χιλιάδες)",nameX="Μήνας",
+bmineUP=0,bmineDOWN=0,
+Minimum=0,Maximum=0,
+u=[1],
+d=[0])
+
+
+############################################################################################################
+
+
+
+
+
+
+
+
+
+##############################################################################################################
+#############
+# BAR PLOTS #
+#############
+
+
+matplotlib.rc('font', size=13)
+matplotlib.rc('axes', titlesize=15)
+
+
+def stbarWORTH(Xronia,Axia,ATC1,TOP,y_offset_mine):
+    USEBAR=USE
+    USEBAR[Xronia] = USEBAR[Xronia].astype(str)
+    BAR1=USEBAR.loc[:,[Xronia,Axia,ATC1]]
+    Year=np.unique(BAR1.loc[:,Xronia])
+    fig, ax = plt.subplots(figsize=(5, 6),tight_layout=True)
+    ListTOP=[]
+    i=0
+    while i<(TOP): 
+        ListTOP.append(pd.DataFrame(BAR1.groupby(ATC1)[Axia].sum().nlargest(TOP)).index.values[i] )
+        i +=1
+    print("Τα μεγαλύτερα ATC1 βάση την ",Axia,"είναι τα ",ListTOP)
+    print()
+    print()
+    agg_tips2=BAR1.groupby([Xronia,ATC1])[Axia].sum().unstack().fillna(0)
+    agg_tips=agg_tips2[ListTOP]
+    list1=Year.tolist()
+    strings = [str(x) for x in list1]
+    bottom = np.zeros(len(agg_tips))
+    
+    print("Πίνακας με την ΑΞΙΑ/ΠΟΣΟΤΗΤΑ των μεγαλύτερων ATC1 ανα έτος")
+    print(agg_tips)
+    
+    for i, col in enumerate(agg_tips.columns):
+      ax.bar(
+          agg_tips.index, agg_tips[col], bottom=bottom, label=col, color=colors[i])
+      bottom += np.array(agg_tips[col])
+
+    totals = agg_tips.sum(axis=1)
+    y_offset = 7
+    for i, total in enumerate(totals):
+      ax.text(totals.index[i], total + y_offset, f"{round(total):,}", ha='center',
+              weight='bold')
+
+    y_offset_mine #ΕΔΩ ΕΙΝΑΙ ΑΥΤΟ ΠΟΥ ΘΕΤΩ ΕΓΩ
+    for bar in ax.patches:
+      ax.text(
+          bar.get_x() + bar.get_width() / 2,
+          bar.get_height() + bar.get_y() + y_offset_mine,
+          f"{round(bar.get_height()):,}",
+          ha='center',
+          color='w',
+          weight='bold',
+          size=12
+      )
+    #plt.box(False)
+    ax.axes.yaxis.set_ticklabels([]) 
+    ax.legend(bbox_to_anchor=(1,0.5),loc='center left')
+    plt.ylabel("Δαπάνη (€)", fontsize=20,color="black") 
+    #ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+    sns.despine()   
+stbarWORTH("Έτος","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ","ATC1",5,-9e5)
+
+
+
+
+
+
+
+def stbarWORTH(Xronia,Axia,ATC1,TOP,y_offset_mine):
+    BAR1=USEBAR.loc[:,[Xronia,Axia,ATC1]]
+    Year=np.unique(BAR1.loc[:,Xronia])
+    fig, ax = plt.subplots(figsize=(5, 6),tight_layout=True)
+    ListTOP=[]
+    i=0
+    while i<(TOP): 
+        ListTOP.append(pd.DataFrame(BAR1.groupby(ATC1)[Axia].sum().nlargest(TOP)).index.values[i] )
+        i +=1
+    print("Τα μεγαλύτερα ATC1 βάση την ",Axia,"είναι τα ",ListTOP)
+    print()
+    print()
+    agg_tips2=BAR1.groupby([Xronia,ATC1])[Axia].sum().unstack().fillna(0)
+    agg_tips=agg_tips2[ListTOP]
+    list1=Year.tolist()
+    strings = [str(x) for x in list1]
+    bottom = np.zeros(len(agg_tips))
+    
+    print("Πίνακας με την ΑΞΙΑ/ΠΟΣΟΤΗΤΑ των μεγαλύτερων ATC1 ανα έτος")
+    print(agg_tips)
+    
+    for i, col in enumerate(agg_tips.columns):
+      ax.bar(
+          agg_tips.index, agg_tips[col], bottom=bottom, label=col, color=colors[i])
+      bottom += np.array(agg_tips[col])
+
+    totals = agg_tips.sum(axis=1)
+    y_offset = 7
+    for i, total in enumerate(totals):
+      ax.text(totals.index[i], total + y_offset, f"{round(total):,}", ha='center',
+              weight='bold')
+
+    y_offset_mine #ΕΔΩ ΕΙΝΑΙ ΑΥΤΟ ΠΟΥ ΘΕΤΩ ΕΓΩ
+    for bar in ax.patches:
+      ax.text(
+          bar.get_x() + bar.get_width() / 2,
+          bar.get_height() + bar.get_y() + y_offset_mine,
+          f"{round(bar.get_height()):,}",
+          ha='center',
+          color='w',
+          weight='bold',
+          size=12
+      )
+    #plt.box(False)
+    ax.axes.yaxis.set_ticklabels([]) 
+    ax.legend(bbox_to_anchor=(1,0.5),loc='center left')
+    plt.ylabel("Ποσότητα", fontsize=20,color="black") 
+    #ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+    sns.despine()   
+#Πρεπει να αλλαξω το y_offset_mine απο -5e5 σε -5e4
+stbarWORTH("Έτος","ΠΟΣΟΤΗΤΑ","ATC1",5,-2e4)
+
+
+
+############################################################################################################
+
+
+
+
+
+
+
+
+
+##############################################################################################################
+
+#############################################
+##
+## ΑΡΙΘΜΟΣ ΣΥΝΤΑΓΩΝ & ΑΡΙΘΜΟΣ ΠΕΡΙΣΤΑΤΙΚΩΝ ##      
+##
+#############################################
+LINE1=USE.loc[:,["Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΣΥΝΟΛΙΚΗ_ΤΙΜΗ_ΒΑΣΗ_ΜΤΚ",'ΚΠ_ΑΣΘΕΝΗ']]
+
+sns.set_style("white")
+colors = ['#4A8DDC', '#2B526A', '#9A64A0', '#4DADB5', '#E4A77F', '#6C88B7', '#605E5C',
+ '#D7C1D9', '#33AE81', '#DC5B57', '#CCCCCC', '#BB4A4A', '#168980', '#293537',
+ '#DFBFBF', '#476A75', '#016AB8', '#AAF20F', '#A6687A', '#3557B8']
+
+
+
+def Dublines(Xronia,Trim,Mhnas,Proion,Synt,Index,nameYR="Υ",nameYL="Υ",nameX="Χ",
+MinRight=0,MaxRight=1,MinLeft=0,MaxLeft=1,
+bmineRightUP=0,bmineRightDOWN=0,bmineLeftUP=0,bmineLeftDOWN=0,
+rightUP=(0),rightDOWN=(1),leftUP=(0),leftDOWN=(1),
+ColRight="blues",ColLeft="red"):
+    LINE1=USE.loc[:,[Xronia,Trim,Mhnas,Proion,Synt]]
+    D0=pd.DataFrame(Final.groupby([Xronia,Synt],as_index=False).size())
+    D1=pd.DataFrame(Final.groupby([Xronia,Trim,Synt],as_index=False).size())
+    D3=pd.DataFrame(Final.groupby([Xronia,Trim,Mhnas,Synt],as_index=False).size())
+    if Index==1:
+        Year=np.unique(LINE1.loc[:,Xronia])
+        YearList=np.unique(LINE1.loc[:,Xronia]).tolist()
+        strings = [str(x) for x in YearList]
+        x=strings       
+###############################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        RightAxis=[] 
+        i=0
+        while i< len(x): 
+            RightAxis.append(pd.DataFrame(D0.groupby([Xronia])["size"].size()).values[i][0] )
+            i +=1
+            #print("step") for ckecking code degubbing
+
+        print("ΓΙΑ ΑΝΑ ΤΡΙΜΗΝΟ")
+        print("Η μικρότερη τιμή της",Synt,"είναι",min(RightAxis),"(Δεξιά)")
+        print("Η μεγαλύτερη τιμή της",Synt,"είναι",max(RightAxis),"(Δεξιά)")
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        D2=pd.DataFrame(Final.groupby([Xronia,Trim,Mhnas,Proion],as_index=False).size())
+        New=pd.DataFrame(D2[Proion]*D2["size"])
+        D2["New"]=New
+        KAL2=D2.groupby([Xronia])["New"].sum()
+
+        LeftAxis=[int(i) for i in KAL2.iloc]
+        print("Η μικρότερη τιμή της",Proion,"είναι",min(KAL2),"(Αριστερά)")
+        print("Η μεγαλύτερη τιμή της",Proion,"είναι",max(KAL2),"(Αριστερά)")
+        print()
+        print()
+        fig,ax = plt.subplots(figsize=(20,12),tight_layout=False)
+        #plt.xlim([-0.2,1.2])
+################################################################
+#### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in KAL2.iloc]
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(leftUP)):   
+                    if a==x[leftUP[i]]:
+                        plt.text(a, b+0.02*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(leftDOWN)):       
+                    if a==x[leftDOWN[j]]:
+                        plt.text(a, b-0.05*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+################################################################
+###ΤΕΛΟΣ ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+        ax.set_xticklabels(x, rotation=80, ha='right')
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+
+        ax.set_ylim([min(KAL2)-0.2*min(KAL2),max(KAL2)+0.2*min(KAL2)]) ####   LEFT / RED   #####  SET LIMITS
+        ax.plot(x, LeftAxis, color=ColLeft, marker="o")
+        ax.set_xlabel(nameX,fontsize=35)
+        ax.set_ylabel(nameYL,color=ColLeft,fontsize=30)
+        ax2=ax.twinx()
+        ax = plt.gca()
+        #ax.set_xlim([xmin, xmax])
+################################################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in pd.Series(RightAxis).iloc]
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(rightUP)):   
+                    if a==x[rightUP[i]]:
+                        plt.text(a, b+0.02*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(rightDOWN)):       
+                    if a==x[rightDOWN[j]]:
+                        plt.text(a, b-0.05*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+################################################################
+### ΤΕΛΟΣ ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+
+
+        ax.set_ylim([min(RightAxis)-0.2*min(RightAxis), max(RightAxis)+0.2*max(RightAxis)]) #BY TRIAL AND ERROR  ####   RIGHT / BLUE 
+
+        ax2.plot(x, RightAxis,color=ColRight,marker="o")
+        ax2.set_ylabel(nameYR,color=ColRight,fontsize=30)
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()   
+                
+        print("Δεξιος Αξονας")
+        print(RightAxis)
+        print()
+        print()
+        print("Αριστερος Αξονας")
+        print(LeftAxis)
+        print()
+        print()
+    if Index==2:
+        ExpensesQ=LINE1.groupby([Xronia,Trim])[Proion].sum()
+        x = USE['Full Quart Date'].unique().tolist()
+###############################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        RightAxis=[] 
+        i=0
+        while i< len(x): 
+            RightAxis.append(pd.DataFrame(D1.groupby([Xronia,Trim])["size"].size()).values[i][0] )
+            i +=1
+            #print("step") for ckecking code degubbing
+
+        print("ΓΙΑ ΑΝΑ ΤΡΙΜΗΝΟ")
+        print("Η μικρότερη τιμή της",Synt,"είναι",min(RightAxis),"(Δεξιά)")
+        print("Η μεγαλύτερη τιμή της",Synt,"είναι",max(RightAxis),"(Δεξιά)")
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        D2=pd.DataFrame(Final.groupby([Xronia,Trim,Mhnas,Proion],as_index=False).size())
+        New=pd.DataFrame(D2[Proion]*D2["size"])
+        D2["New"]=New
+        KAL2=D2.groupby([Xronia,Trim])["New"].sum()
+
+        LeftAxis=[int(i) for i in KAL2.iloc]
+        print("Η μικρότερη τιμή της",Proion,"είναι",min(KAL2),"(Αριστερά)")
+        print("Η μεγαλύτερη τιμή της",Proion,"είναι",max(KAL2),"(Αριστερά)")
+        print()
+        print()
+        fig,ax = plt.subplots(figsize=(20,12),tight_layout=False)
+        plt.xlim([-0.2,1.2])
+################################################################
+#### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in KAL2.iloc]
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(leftUP)):   
+                    if a==x[leftUP[i]]:
+                        plt.text(a, b+0.02*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(leftDOWN)):       
+                    if a==x[leftDOWN[j]]:
+                        plt.text(a, b-0.05*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+################################################################
+###ΤΕΛΟΣ ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+        ax.set_xticklabels(x, rotation=80, ha='right')
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+
+        ax.set_ylim([min(KAL2)-0.2*min(KAL2),max(KAL2)+0.2*min(KAL2)]) ####   LEFT / RED   #####  SET LIMITS
+        ax.plot(x, LeftAxis, color=ColLeft, marker="o")
+        ax.set_xlabel(nameX,fontsize=35)
+        ax.set_ylabel(nameYL,color=ColLeft,fontsize=30)
+        ax2=ax.twinx()
+        ax = plt.gca()
+        #ax.set_xlim([xmin, xmax])
+################################################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in pd.Series(RightAxis).iloc]
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(rightUP)):   
+                    if a==x[rightUP[i]]:
+                        plt.text(a, b+0.02*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(rightDOWN)):       
+                    if a==x[rightDOWN[j]]:
+                        plt.text(a, b-0.05*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+################################################################
+### ΤΕΛΟΣ ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+
+
+        ax.set_ylim([min(RightAxis)-0.2*min(RightAxis), max(RightAxis)+0.2*max(RightAxis)]) #BY TRIAL AND ERROR  ####   RIGHT / BLUE 
+
+        ax2.plot(x, RightAxis,color=ColRight,marker="o")
+        ax2.set_ylabel(nameYR,color=ColRight,fontsize=30)
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()   
+                
+        print("Δεξιος Αξονας")
+        print(RightAxis)
+        print()
+        print()
+        print("Αριστερος Αξονας")
+        print(LeftAxis)
+        print()
+        print()
+    if Index==3:
+        ExpensesM=LINE1.groupby([Xronia,Mhnas])[Proion].sum()
+        x = USE['Full Month Date'].unique().tolist()
+        y = ExpensesM
+###############################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        RightAxis=[]#FULL 
+        i=0
+        while i< len(x): 
+            RightAxis.append(pd.DataFrame(D3.groupby([Xronia,Mhnas])["size"].size()).values[i][0] )
+            i +=1
+            #print("step") for ckecking code degubbing
+
+        print("ΓΙΑ ΑΝΑ ΜΗΝΑ")
+        print("Η μικρότερη τιμή της",Synt,"είναι",min(RightAxis),"(Δεξιά)")
+        print("Η μεγαλύτερη τιμή της",Synt,"είναι",max(RightAxis),"(Δεξιά)")
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        D2=pd.DataFrame(Final.groupby([Xronia,Trim,Mhnas,Proion],as_index=False).size())
+        New=pd.DataFrame(D2[Proion]*D2["size"])
+        D2["New"]=New
+        KAL2=D2.groupby(["Έτος","Μήνας"])["New"].sum()    
+
+        LeftAxis=[int(i) for i in KAL2.iloc]
+        print("Η μικρότερη τιμή της",Proion,"είναι",min(KAL2),"(Αριστερά)")
+        print("Η μεγαλύτερη τιμή της",Proion,"είναι",max(KAL2),"(Αριστερά)")
+
+        fig,ax = plt.subplots(figsize=(20,12),tight_layout=True)
+################################################################
+#### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in KAL2.iloc]
+        rd= [round(num, -5) for num in TotInt] 
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(leftUP)):   
+                    if a==x[leftUP[i]]:
+                        plt.text(a, b+0.02*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(leftDOWN)):       
+                    if a==x[leftDOWN[j]]:
+                        plt.text(a, b-0.05*min(KAL2), str(round(b/1E3,2))+' T €')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+################################################################
+###ΤΕΛΟΣ ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ(ΤΙΜΕΣ)
+################################################################
+
+        ax.set_xticklabels(x, rotation=60, ha='right')
+        #ax.set_xlim([xmin, xmax])
+        ax.yaxis.set_major_formatter(million_formatter)#[pos fianteia to Y]
+
+
+
+        ax.set_ylim([min(KAL2)-0.2*min(KAL2),max(KAL2)+0.2*min(KAL2)]) #BY TRIAL AND ERROR SEE min and max of KAL2
+
+        ax.plot(x, LeftAxis, color=ColLeft, marker="o")
+        ax.set_xlabel(nameX,fontsize=35)
+        ax.set_ylabel(nameYL,color=ColLeft,fontsize=30)
+        ax2=ax.twinx()
+        ax = plt.gca()
+        #ax.set_xlim([xmin, xmax])
+
+################################################################
+### ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+        TotInt = [int(i) for i in pd.Series(RightAxis).iloc]
+        rd= [round(num, -5) for num in TotInt]  
+        i=0
+        j=0
+        for a,b,rd in zip(x,TotInt,rd):
+            for i in range(len(rightUP)):   
+                    if a==x[rightUP[i]]:
+                        plt.text(a, b+0.02*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν κατω
+                        i+=1
+            for j in range(len(rightDOWN)):       
+                    if a==x[rightDOWN[j]]:
+                        plt.text(a, b-0.05*min(RightAxis), str(round(b/1E3,2))+' T')#Αυτες που θα εμφανιστουν πανω
+                        j+=1
+
+################################################################
+### ΤΕΛΟΣ ΔΕΞΙΟΣ ΑΞΟΝΑΣ Υ (ΤΙΜΕΣ)
+################################################################
+
+        ax.set_ylim([min(RightAxis)-0.2*min(RightAxis), max(RightAxis)+0.2*max(RightAxis)]) #BY TRIAL AND ERROR SEE min and max of KAL2
+
+        ax2.plot(x, RightAxis,color=ColRight,marker="o")
+        ax2.set_ylabel(nameYR,color=ColRight,fontsize=30) #Ασθενεις απο ΑΑ ΚΑΡΤΕΛΑΣ
+        ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5,axis="y")
+        sns.despine()   
+         
+        print()
+        print()            
+        print("Δεξιος Αξονας")
+        print(RightAxis)
+        print()
+        print()
+        print("Αριστερος Αξονας")
+        print(LeftAxis)
+        print()
+        print()
+
+######
+#ΕΤΟΣ#
+######
+##ΑΠΟ REPORT##
+Dublines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΠΟΣΟΤΗΤΑ","ΚΠ_ΑΣΘΕΝΗ",1,nameYR="Αρ.Περιστατικών",nameYL="Δαπάνη (€,Χιλιάδες)",nameX="Τρίμηνο",
+MinRight=0,MaxRight=0,MinLeft=0,MaxLeft=0,
+bmineRightUP=0,bmineRightDOWN=0,bmineLeftUP=0,bmineLeftDOWN=0,
+rightUP=[0],rightDOWN=[],leftUP=[],leftDOWN=[0],
+ColRight=colors[9],ColLeft=colors[0])
+
+
+#########
+#ΤΡΙΜΗΝΟ#
+#########
+##ΑΠΟ REPORT##
+Dublines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΠΟΣΟΤΗΤΑ","ΚΠ_ΑΣΘΕΝΗ",2,nameYR="Αρ.Περιστατικών",nameYL="Ποσότητα",nameX="Τρίμηνο",
+MinRight=0,MaxRight=0,MinLeft=0,MaxLeft=0,
+bmineRightUP=0,bmineRightDOWN=0,bmineLeftUP=0,bmineLeftDOWN=0,
+rightUP=[0],rightDOWN=[0],leftUP=[0],leftDOWN=[0],
+ColRight=colors[9],ColLeft=colors[0])
+
+
+#######
+#Μηνας#
+#######
+Dublines("Έτος","ΤΡΙΜΗΝΟ ΑΝΑΦΟΡΑΣ","Μήνας","ΠΟΣΟΤΗΤΑ","ΚΠ_ΑΣΘΕΝΗ",3,nameYR="Αρ.Περιστατικών",nameYL="Ποσότητα",nameX="Μήνας",
+MinRight=0,MaxRight=0,MinLeft=0,MaxLeft=0,
+bmineRightUP=0,bmineRightDOWN=0,bmineLeftUP=0,bmineLeftDOWN=0,
+rightUP=[0],rightDOWN=[0],leftUP=[0],leftDOWN=[0],
+ColRight=colors[9],ColLeft=colors[0])
+##########################################################################################
+##########################################################################################
+
+
+
+SMALL_SIZE = 25
+matplotlib.rc('font', size=SMALL_SIZE)
+matplotlib.rc('axes', titlesize=SMALL_SIZE)
+
+
+
+
+##########################################
+##
+## ΑΞΙΑ ΦΑΡΜΑΚΩΝ & ΑΡΙΘΜΟΣ ΠΕΡΙΣΤΑΤΙΚΩΝ ##
+##
+##########################################
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        KAL2=LINE1.groupby([Xronia])[Proion].sum() 
+
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        KAL2=LINE1.groupby([Xronia,Trim])[Proion].sum() 
+
+###############################################
+### ΑΡΙΣΤΕΡΟΣ ΑΞΟΝΑΣ Υ
+###############################################
+        KAL2=LINE1.groupby([Xronia,Mhnas])[Proion].sum() 
